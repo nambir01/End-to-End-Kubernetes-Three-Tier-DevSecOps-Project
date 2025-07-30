@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket         = "nambirbucket2707"
-    region         = "ap-south-1"
+    region         = "us-east-1"
     key            = "End-to-End-Kubernetes-Three-Tier-DevSecOps-Project/Jenkins-Server-TF/terraform.tfstate"
     dynamodb_table = "nambi-dbtable"
     encrypt        = true
