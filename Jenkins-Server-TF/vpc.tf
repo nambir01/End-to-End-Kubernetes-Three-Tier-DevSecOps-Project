@@ -1,16 +1,18 @@
 resource "aws_vpc" "vpc" {
   cidr_block = "10.0.0.0/16"
   tags = {
-    Name = "Main-VPC"
+    Name = var.vpc-name
   }
 }
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
   tags = {
-    Name = "Main-IGW"
+    Name = var.igw-name
   }
 }
+
+data "aws_availability_zones" "available" {}
 
 resource "aws_subnet" "public-subnet" {
   vpc_id                  = aws_vpc.vpc.id
@@ -18,7 +20,7 @@ resource "aws_subnet" "public-subnet" {
   availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = true
   tags = {
-    Name = "Public-Subnet"
+    Name = var.subnet-name
   }
 }
 
@@ -29,7 +31,7 @@ resource "aws_route_table" "rt" {
     gateway_id = aws_internet_gateway.igw.id
   }
   tags = {
-    Name = "Public-RT"
+    Name = var.rt-name
   }
 }
 
@@ -42,17 +44,19 @@ resource "aws_security_group" "security-group" {
   vpc_id      = aws_vpc.vpc.id
   description = "Allowing Jenkins, Sonarqube, SSH Access"
 
-  dynamic "ingress" {
-    for_each = [22, 8080, 9000, 9090, 80]
-    content {
-      description      = "Allow Port ${ingress.value}"
-      from_port        = ingress.value
-      to_port          = ingress.value
+  ingress = [
+    for port in [22, 8080, 9000, 9090, 80] : {
+      description      = "Allow traffic"
+      from_port        = port
+      to_port          = port
       protocol         = "tcp"
       cidr_blocks      = ["0.0.0.0/0"]
       ipv6_cidr_blocks = ["::/0"]
+      self             = false
+      prefix_list_ids  = []
+      security_groups  = []
     }
-  }
+  ]
 
   egress {
     from_port   = 0
@@ -62,7 +66,6 @@ resource "aws_security_group" "security-group" {
   }
 
   tags = {
-    Name = "Main-SG"
+    Name = var.sg-name
   }
 }
-
